@@ -133,9 +133,12 @@ static void $jswrapper(v8::Isolate *isolate, v8::Persistent<v8::Value> object, v
   SWIGV8_Proxy *proxy = static_cast<SWIGV8_Proxy *>(parameter);
 #elif (V8_MAJOR_VERSION-0) < 4 && (SWIG_V8_VERSION < SWIGV8_SETWEAK_VERSION)
 static void $jswrapper(v8::Isolate *isolate, v8::Persistent<v8::Object> *object, SWIGV8_Proxy *proxy) {
-#else
+#elif (V8_MAJOR_VERSION-0) <= 4
 static void $jswrapper(const v8::WeakCallbackData<v8::Object, SWIGV8_Proxy> &data) {
   v8::Local<v8::Object> object = data.GetValue();
+  SWIGV8_Proxy *proxy = data.GetParameter();
+#else
+static void $jswrapper(const v8::WeakCallbackInfo<SWIGV8_Proxy> &data) {
   SWIGV8_Proxy *proxy = data.GetParameter();
 #endif
 
@@ -155,8 +158,9 @@ static void $jswrapper(const v8::WeakCallbackData<v8::Object, SWIGV8_Proxy> &dat
   object.Dispose(isolate);
 #elif (V8_MAJOR_VERSION-0) < 4 && (SWIG_V8_VERSION < 0x032100)
   object->Dispose(isolate);
-#else
+#elif (V8_MAJOR_VERSION-0) <= 4
   object->Dispose();
+#else
 #endif
 }
 %}
@@ -177,9 +181,12 @@ static void $jswrapper(v8::Isolate *isolate, v8::Persistent<v8::Value> object, v
   SWIGV8_Proxy *proxy = static_cast<SWIGV8_Proxy *>(parameter);
 #elif (V8_MAJOR_VERSION-0) < 4 && (SWIG_V8_VERSION < SWIGV8_SETWEAK_VERSION)
 static void $jswrapper(v8::Isolate *isolate, v8::Persistent< v8::Object> *object, SWIGV8_Proxy *proxy) {
-#else
+#elif (V8_MAJOR_VERSION-0) <= 4
 static void $jswrapper(const v8::WeakCallbackData<v8::Object, SWIGV8_Proxy> &data) {
   v8::Local<v8::Object> object = data.GetValue();
+  SWIGV8_Proxy *proxy = data.GetParameter();
+#else
+static void $jswrapper(const v8::WeakCallbackInfo<SWIGV8_Proxy> &data) {
   SWIGV8_Proxy *proxy = data.GetParameter();
 #endif
 
@@ -197,8 +204,9 @@ static void $jswrapper(const v8::WeakCallbackData<v8::Object, SWIGV8_Proxy> &dat
   object->Dispose(isolate);
 #elif (V8_MAJOR_VERSION-0) < 4 && (SWIG_V8_VERSION < SWIGV8_SETWEAK_VERSION)
   object->Dispose();
-#else
+#elif (V8_MAJOR_VERSION-0) <= 4
   object.Clear();
+#else
 #endif
 }
 %}
@@ -211,7 +219,11 @@ static void $jswrapper(const v8::WeakCallbackData<v8::Object, SWIGV8_Proxy> &dat
  * ----------------------------------------------------------------------------- */
 %fragment("js_getter", "templates")
 %{
+#if (V8_MAJOR_VERSION-0) <= 4
 static SwigV8ReturnValue $jswrapper(v8::Local<v8::String> property, const SwigV8PropertyCallbackInfo &info) {
+#else
+static SwigV8ReturnValue $jswrapper(v8::Local<v8::Name> property, const SwigV8PropertyCallbackInfo &info) {
+#endif
   SWIGV8_HANDLESCOPE();
   
   v8::Handle<v8::Value> jsresult;
@@ -233,8 +245,14 @@ fail:
  * ----------------------------------------------------------------------------- */
 %fragment("js_setter", "templates")
 %{
+#if (V8_MAJOR_VERSION-0) <= 4
 static void $jswrapper(v8::Local<v8::String> property, v8::Local<v8::Value> value,
-  const SwigV8PropertyCallbackInfoVoid &info) {
+  const SwigV8PropertyCallbackInfoVoid &info) 
+#else
+static void $jswrapper(v8::Local<v8::Name> property, v8::Local<v8::Value> value,
+  const SwigV8PropertyCallbackInfoVoid &info) 
+#endif
+{
   SWIGV8_HANDLESCOPE();
   
   $jslocals

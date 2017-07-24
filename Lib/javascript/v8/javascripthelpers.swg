@@ -6,10 +6,15 @@ typedef v8::InvocationCallback  SwigV8FunctionCallback;
 typedef v8::AccessorGetter      SwigV8AccessorGetterCallback;
 typedef v8::AccessorSetter      SwigV8AccessorSetterCallback;
 typedef v8::AccessorInfo        SwigV8PropertyCallbackInfoVoid;
-#else
+#elif (V8_MAJOR_VERSION-0) <= 4
 typedef v8::FunctionCallback            SwigV8FunctionCallback;
 typedef v8::AccessorGetterCallback      SwigV8AccessorGetterCallback;
 typedef v8::AccessorSetterCallback      SwigV8AccessorSetterCallback;
+typedef v8::PropertyCallbackInfo<void>  SwigV8PropertyCallbackInfoVoid;
+#else
+typedef v8::FunctionCallback            SwigV8FunctionCallback;
+typedef v8::AccessorNameGetterCallback      SwigV8AccessorGetterCallback;
+typedef v8::AccessorNameSetterCallback      SwigV8AccessorSetterCallback;
 typedef v8::PropertyCallbackInfo<void>  SwigV8PropertyCallbackInfoVoid;
 #endif
 
@@ -59,23 +64,36 @@ SWIGRUNTIME void SWIGV8_AddStaticFunction(v8::Handle<v8::Object> obj, const char
   const SwigV8FunctionCallback& _func) {
   obj->Set(SWIGV8_SYMBOL_NEW(symbol), SWIGV8_FUNCTEMPLATE_NEW(_func)->GetFunction());
 }
-
+ 
 /**
  * Registers a class method with given name for a given object.
  */
 SWIGRUNTIME void SWIGV8_AddStaticVariable(v8::Handle<v8::Object> obj, const char* symbol,
   SwigV8AccessorGetterCallback getter, SwigV8AccessorSetterCallback setter) {
+
+#if (V8_MAJOR_VERSION-0) < 4
   obj->SetAccessor(SWIGV8_SYMBOL_NEW(symbol), getter, setter);
+#elif (V8_MAJOR_VERSION-0) < 5
+  obj->SetAccessor(SWIGV8_SYMBOL_NEW(symbol), getter, setter);
+#elif (V8_MAJOR_VERSION-0) < 6
+  obj->SetAccessor(SWIGV8_CURRENT_CONTEXT(), SWIGV8_NAME_NEW(symbol), getter, setter);
+#endif
 }
 
+#if (V8_MAJOR_VERSION-0) <= 4
 SWIGRUNTIME void JS_veto_set_variable(v8::Local<v8::String> property, v8::Local<v8::Value> value,
   const SwigV8PropertyCallbackInfoVoid& info)
+#else
+SWIGRUNTIME void JS_veto_set_variable(v8::Local<v8::Name> property, v8::Local<v8::Value> value,
+  const SwigV8PropertyCallbackInfoVoid& info)
+#endif
 {
     char buffer[256];
     char msg[512];
     int res;
 
-    property->WriteUtf8(buffer, 256);
+    auto propertyString = v8::String::Cast(*property);
+    propertyString->WriteUtf8(buffer, 256);
     res = sprintf(msg, "Tried to write read-only variable: %s.", buffer);
 
     if(res<0) {
@@ -83,7 +101,6 @@ SWIGRUNTIME void JS_veto_set_variable(v8::Local<v8::String> property, v8::Local<
     } else {
       SWIG_exception(SWIG_ERROR, msg);
     }
-fail: ;
 }
 
 %} // v8_helper_functions
